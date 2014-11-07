@@ -1,5 +1,7 @@
 sudo apt-get install -y git build-essential
 
+sudo npm install -g
+
 sudo mkdir /tmp/mon
 cd /tmp/mon
 curl -L# https://github.com/visionmedia/mon/archive/master.tar.gz | sudo tar zx --strip 1
@@ -13,7 +15,7 @@ fi
 
 echo $VHOST > VHOST
 
-sudo npm install mongroup taco -g
+sudo npm install mongroup -g
 mkdir logs
 mkdir pids
 

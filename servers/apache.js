@@ -21,8 +21,13 @@ Apache.prototype.setup = function(cb){
     this.vhosts = new Vhosts();
 }
 
-Apache.install = function(){
-
+Apache.install = function(vhost, host, cb){
+    v = new Vhosts();
+    v.write({
+        name : "main",
+        domain : 'taco.' + vhost,
+        port : 8080
+    }, cb);
 }
 
 Vhosts.prototype.config = function(opts){

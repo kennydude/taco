@@ -18,7 +18,7 @@ mkdir logs
 mkdir pids
 
 if [ ! -f mongroup.conf ]; then
-    echo 'taco = sudo DEBUG=taco taco $(cat VHOST)' > mongroup.conf
+    echo "taco = sudo DEBUG=taco taco -h $VHOST -s $SERVER" > mongroup.conf
     echo "logs = logs" >> mongroup.conf
     echo "pids = pids" >> mongroup.conf
 fi

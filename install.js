@@ -1,14 +1,22 @@
 #!/usr/bin/env node
 
-var child = require('child_process')
-var spawn = child.spawn
-var script = require('./')
-var fs = require('fs')
-var path = require('path')
-var user = process.argv[2]
-var vhost = process.argv[3]
+var child = require('child_process');
+var spawn = child.spawn;
+var script = require('./');
+var fs = require('fs');
+var path = require('path');
+var user = process.argv[2];
+var vhost = process.argv[3];
+var s = process.argv[4] || "ngnix";
 
-if (!user || !vhost) return console.error('Usage: install-taco-on-ubuntu user server')
+try{
+    var server = require("./servers/" + s);
+} catch(e){
+    console.error("Server does not exist!!!!");
+    process.exit(-1);
+}
+
+if (!user || !vhost) return console.error('Usage: install-taco-on-ubuntu user hostname server')
 
 var host = user + '@' + vhost
 var hostOverrides = ['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no']
@@ -26,7 +34,7 @@ installTacoConf(function(code) {
 
 function installMongroup(cb) {
   console.log('Installing mongroup...')
-  
+
   var ssh = spawn('ssh', hostOverrides.concat(host))
 
   ssh.stdout.pipe(process.stdout)
@@ -58,15 +66,5 @@ function installMongroupConf(cb) {
 }
 
 function installTacoConf(cb) {
-  console.log('Writing taco.conf for nginx...')
-  var conf = fs.readFileSync(path.join(__dirname, 'taco.conf')).toString().replace('VHOST', 'taco.' + vhost)
-  var remotePath = '/etc/nginx/conf.d/taco.conf'
-  var echo = ['echo', "'" + conf + "'", '|', 'ssh']
-  var args = hostOverrides.concat([host, "'sudo tee " + remotePath + "'"])
-  var cmd = echo.concat(args).join(' ')
-  child.exec(cmd, function(err, stdo, stde) {
-    process.stderr.write(stde)
-    console.log('Wrote taco.conf', {err: err})
-    if (cb) cb()
-  })
+  server.install(cb);
 }

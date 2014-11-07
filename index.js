@@ -10,10 +10,10 @@ var mkdirp = require('mkdirp')
 var getport = require('getport')
 var through = require('through')
 var mongroup = require('mongroup')
-var Vhosts = require('nginx-vhosts')
 var backend = require('git-http-backend')
 var readDirFiles = require('read-dir-files')
-var nconf = require('nginx-conf').NginxConfFile
+
+var ngnix = require("./servers/ngnix")
 
 // show debug messages if process.env.DEBUG === taco
 var debug = require('debug')('taco')
@@ -23,8 +23,9 @@ module.exports = Host
 function Host(opts, ready) {
   if (!(this instanceof Host)) return new Host(opts, ready)
   var self = this
-  
+
   this.opts = opts || {}
+  this.server = new ngnix();
 
   // set up default options
   if (!opts.dir) opts.dir = process.cwd()
@@ -34,14 +35,14 @@ function Host(opts, ready) {
   this.portsDir = opts.portsDir || path.join(opts.dir, 'ports')
   this.username = opts.username || process.env['USER']
   this.password = opts.password || process.env['PASS']
-  
+
   this.auth = basic(function (user, pass, callback) {
     if (user === self.username && pass === self.password) return callback(null)
     callback(401)
   })
-  
+
   // TODO make vhosts more abstract, not nginx specific
-  this.setupNginx(function(err) {
+  this.server.setup(function(err) {
     mkdirp(self.portsDir, function(err) {
       self.readPorts(function(err, ports) {
         if (ready && err) return ready(err)
@@ -64,65 +65,25 @@ Host.prototype.readPorts = function(cb) {
 }
 
 Host.prototype.setupNginx = function(cb) {
-  var self = this
-  var opts = this.opts
-  // make sure the nginx.conf has server_names_hash_bucket_size === 64
-  var confPath = opts.nginx.conf || '/etc/nginx/nginx.conf'
-  debug('Host.setup opening nginx conf ' + confPath)
-  
-  nconf.create(confPath, function(err, conf) {
-    if (err) return cb(err)
-    if (conf.nginx.http.server_names_hash_bucket_size) {
-      debug('Host.setup nginx conf already configured correctly')
-      return initVhosts()
-    }
-    conf.nginx.http._add('server_names_hash_bucket_size', '64')
-    debug('Host.setup updating nginx conf with new configuration')
-    fs.writeFile(confPath, conf.toString(), function(err) {
-      if (err) return cb(err)
-      initVhosts()
-    })
-  })
-  
-  // make sure nginx is running, start it if not
-  function initVhosts() {
-    self.vhosts = Vhosts(opts.nginx, function running(isRunning) {
-      if (!isRunning) {
-        self.vhosts.nginx.start(function(err) {
-          if (!err) return
-          debug('Host.setup nginx start error ' + err)
-          cb(err)
-        })
-        debug('Host.setup starting nginx...')
-      } else {
-        debug('Host.setup nginx is running')
-        debug('Host.setup reloading nginx configuration...')
-        self.vhosts.nginx.reload(function(err, stdo, stde) {
-          setTimeout(function() {
-            cb(err)
-          }, 500)
-        })
-      }
-    })
-  }
+    console.warn("setupNgnix: error");
 }
 
 Host.prototype.handle = function(req, res) {
   var self = this
-  
+
   var ip = req.headers['x-forwarded-for'] ||
        req.connection.remoteAddress ||
        req.socket.remoteAddress ||
        req.connection.socket.remoteAddress
-  
+
   debug('Host.handle ' + ip + ' - ' + req.method + ' - ' + req.url)
-  
+
   // if no user + pass specified then let anyone push
   if (!this.username || !this.password) {
     debug('Host.handle no user/pass set, accepting request')
     return accept()
   }
-  
+
   this.auth(req, res, function (err) {
     if (err) {
 
@@ -134,14 +95,14 @@ Host.prototype.handle = function(req, res) {
     debug('Host.handle auth success, accepting request')
     accept()
   })
-  
+
   function accept() {
     // hook the req/res up to git-http-backend
     var bs = backend(req.url, onService)
     console.log(req.headers)
     req.pipe(bs).pipe(res)
   }
-  
+
   // in a typical git push this will get called once for
   // 'info' and then again for 'push'
   function onService(err, service) {
@@ -149,17 +110,17 @@ Host.prototype.handle = function(req, res) {
       debug('Host.handle onService ' + service.action + ' err: ' + err)
       return res.end(JSON.stringify({err: err}))
     }
-    
+
     if (service.action === 'push') {
       service.sideband = service.createBand()
     }
-    
+
     res.setHeader('content-type', service.type)
 
     // TODO pluggable url parsing
     var repo = req.url.split('/')[1]
     var dir = path.join(self.repoDir, repo)
-    
+
     // create-if-not-exists the directory + bare git repo to store the incoming repo
     self.init(dir, function(err, sto, ste) {
       if (err || ste) {
@@ -168,22 +129,22 @@ Host.prototype.handle = function(req, res) {
         debug('Host.handle onService ' + service.action + ' init dir err: ' + errStr)
         return res.end(errStr)
       }
-      
+
       var serviceStream = service.createStream()
-      
+
       // shell out to the appropriate `git` command, TODO implement this in pure JS :)
       var ps = spawn(service.cmd, service.args.concat(dir))
       ps.stdout.pipe(serviceStream).pipe(ps.stdin)
-      
+
       debug('Host.onService spawn ' + service.cmd + ' ' + service.action)
-      
+
       ps.on('exit', function() {
         debug('Host.onService spawn ' + service.cmd + ' ' + service.action + ' finished')
         if (service.action === 'push') {
           self.handlePush({repo: repo, service: service})
         }
       })
-      
+
     })
   }
 }
@@ -207,7 +168,7 @@ Host.prototype.handlePush = function(push, cb) {
   var checkoutDir = self.checkoutDir(push.repo)
   var name = self.name(push.repo)
   var portFile = path.join(this.portsDir, name)
-  
+
   self.update(push, function(err) {
     if (err) {
       sideband.write('checkout error ' + err.message + '\n')
@@ -216,7 +177,7 @@ Host.prototype.handlePush = function(push, cb) {
     }
     prepare()
   })
-  
+
   function prepare() {
     sideband.write('Received ' + push.repo + '\n')
     sideband.write('Running npm install...\n')
@@ -240,7 +201,7 @@ Host.prototype.handlePush = function(push, cb) {
       debug('Host.handlePush getPort read port from portFile: ' + port)
       gotPort(err, port)
     })
-    
+
     function newPort() {
       getport(function(err, port) {
         if (err) return gotPort(err)
@@ -253,14 +214,14 @@ Host.prototype.handlePush = function(push, cb) {
           return newPort()
         }
         self.ports[name] = port
-        
+
         debug('Host.handlePush getPort writing new portFile ' + portFile)
         fs.writeFile(portFile, port.toString(), function(err) {
           gotPort(err, port)
         })
       })
     }
-    
+
     function gotPort(err, port) {
       if (err) {
         sideband.write('ERROR could not get port\n')
@@ -289,9 +250,9 @@ Host.prototype.handlePush = function(push, cb) {
       })
     })
   }
-  
+
   function vhost(opts) {
-    self.vhosts.write(opts, function(err, stdo, stde) {
+    self.server.vhosts.write(opts, function(err, stdo, stde) {
       // give nginx time to reload config
       setTimeout(function() {
         if (err) debug('Host.handlePush vhosts.write err: ' + err)
@@ -300,7 +261,7 @@ Host.prototype.handlePush = function(push, cb) {
       }, 500)
     })
   }
-  
+
   function finish(err, opts) {
     if (err) {
       sideband.write('Deploy error! ' + err + '\n')
@@ -315,11 +276,11 @@ Host.prototype.handlePush = function(push, cb) {
 }
 
 Host.prototype.close = function() {
-  this.vhosts.nginx.end()
+  this.server.end()
 }
 
 Host.prototype.prepare = function(dir, res, cb) {
-  var npmi = spawn('npm', ['install'], { cwd : dir }) 
+  var npmi = spawn('npm', ['install'], { cwd : dir })
   npmi.stdout.pipe(res, { end: false })
   npmi.stderr.pipe(res, { end: false })
   npmi.on('exit', function (c) {
@@ -332,7 +293,7 @@ Host.prototype.prepare = function(dir, res, cb) {
 Host.prototype.monitor = function(name, dir, cb) {
   var self = this
   var confPath = path.join(this.opts.dir, 'mongroup.conf')
-  
+
   fs.readFile(confPath, 'utf8', function(err, conf) {
     if (err) {
       conf = {
@@ -341,20 +302,20 @@ Host.prototype.monitor = function(name, dir, cb) {
     } else {
       conf = mongroup.parseConfig(conf)
     }
-    
+
     if (!conf.logs) conf.logs = path.join(self.opts.dir, 'logs')
     if (!conf.pids) conf.pids = path.join(self.opts.dir, 'pids')
-    
+
     var portFile = path.join(self.portsDir, name)
 
     if (!conf.processes[name])
       conf.processes[name] = 'cd ' + dir + ' && ' + 'PORT=$(cat ' + portFile +') npm start'
-    
+
     var confString = self.serializeConf(conf)
-    
+
     fs.writeFile(confPath, confString, function(err) {
       if (err) return cb(err)
-      
+
       mkdirp(conf.logs, function(err) {
         if (err) return cb(err)
         mkdirp(conf.pids, function(err) {
@@ -363,12 +324,12 @@ Host.prototype.monitor = function(name, dir, cb) {
         })
       })
     })
-    
+
     function initGroup() {
       var group = new mongroup(conf)
-  
+
       var procs = [name]
-  
+
       group.stop(procs, 'SIGQUIT', function(err) {
         if (err) return cb(err)
         group.start(procs, function(err) {
@@ -378,7 +339,7 @@ Host.prototype.monitor = function(name, dir, cb) {
       })
     }
   })
-  
+
 }
 
 Host.prototype.serializeConf = function(conf) {
@@ -431,7 +392,7 @@ Host.prototype.checkout = function(push, cb) {
       'file://' + path.resolve(self.repoDir, push.repo),
       push.service.fields.branch
     ].join(' ')
-    
+
     child.exec(cmd, { cwd : dir }, function (err) {
       if (err) return cb(err)
       debug('fetch() ' + dir + ' finished')
@@ -443,12 +404,12 @@ Host.prototype.checkout = function(push, cb) {
     var cmd = [
       'git', 'checkout', '-b', push.service.fields.branch, push.service.fields.head
     ].join(' ')
-    
+
     child.exec(cmd, { cwd : dir }, function(err, stdo, stde) {
       cb(err, stdo, stde)
     })
   }
-  
+
 }
 
 Host.prototype.pull = function (push, cb) {

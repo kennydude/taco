@@ -22,7 +22,8 @@
     "nginx-conf": "~0.1.0",
     "git-http-backend": "~0.1.1",
     "debug": "~0.7.4",
-    "read-dir-files": "~0.1.1"
+    "read-dir-files": "~0.1.1",
+    "commander": "~2.5.0"
   },
   "devDependencies": {
     "rimraf": "~2.2.5",

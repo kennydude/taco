@@ -6,7 +6,7 @@ var fs = require("fs");
 function Apache(){}
 function Vhosts(){}
 
-Apache.prototype.setup = function(cb){
+Apache.prototype.setup = function(opts, cb){
     this.confPath = opts.nginx.conf || null;
     if(!this.confPath){
         if(fs.existsSync("/etc/httpd/conf")){

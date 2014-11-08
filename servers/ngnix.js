@@ -7,9 +7,8 @@ function Ngnix(){
 
 }
 
-Ngnix.prototype.setup = function(cb){
+Ngnix.prototype.setup = function(opts, cb){
     var self = this;
-    var opts = this.opts;
     // make sure the nginx.conf has server_names_hash_bucket_size === 64
     var confPath = opts.nginx.conf || '/etc/nginx/nginx.conf';
     debug('Host.setup opening nginx conf ' + confPath);

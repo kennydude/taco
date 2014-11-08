@@ -13,8 +13,6 @@ var mongroup = require('mongroup')
 var backend = require('git-http-backend')
 var readDirFiles = require('read-dir-files')
 
-var ngnix = require("./servers/ngnix")
-
 // show debug messages if process.env.DEBUG === taco
 var debug = require('debug')('taco')
 
@@ -25,7 +23,8 @@ function Host(opts, ready) {
   var self = this
 
   this.opts = opts || {}
-  this.server = new ngnix();
+  var s = require("./servers/" + opts.server);
+  this.server = new s();
 
   // set up default options
   if (!opts.dir) opts.dir = process.cwd()
@@ -41,8 +40,7 @@ function Host(opts, ready) {
     callback(401)
   })
 
-  // TODO make vhosts more abstract, not nginx specific
-  this.server.setup(function(err) {
+  this.server.setup(opts, function(err) {
     mkdirp(self.portsDir, function(err) {
       self.readPorts(function(err, ports) {
         if (ready && err) return ready(err)

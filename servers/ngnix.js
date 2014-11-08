@@ -54,7 +54,7 @@ Ngnix.prototype.end = function(){
     this.vhosts.nginx.end();
 }
 
-Ngnix.setup = function(vhost, host, cb){
+Ngnix.prototype.setup = function(vhost, host, cb){
     console.log('Writing taco.conf for nginx...')
     var conf = fs.readFileSync(path.join(__dirname, '..', 'taco.conf')).toString().replace('VHOST', 'taco.' + vhost)
     var remotePath = '/etc/nginx/conf.d/taco.conf'

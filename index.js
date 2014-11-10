@@ -66,6 +66,20 @@ Host.prototype.setupNginx = function(cb) {
     console.warn("setupNgnix: error");
 }
 
+Host.prototype.webAPI = function(req, res) {
+    if(req.url.split('/').length < 2){
+        res.statusCode = 404;
+        return res.end("404");
+    }
+    var method = req.url.split('/')[2];
+    if(method == "hosts"){
+        return res.end("todo");
+    } else{
+        res.statusCode = 404;
+        return res.end("404");
+    }
+};
+
 Host.prototype.handle = function(req, res) {
   var self = this
 
@@ -74,7 +88,12 @@ Host.prototype.handle = function(req, res) {
        req.socket.remoteAddress ||
        req.connection.socket.remoteAddress
 
-  debug('Host.handle ' + ip + ' - ' + req.method + ' - ' + req.url)
+  debug('Host.handle ' + ip + ' - ' + req.method + ' - ' + req.url);
+
+  console.log(req.url);
+  if(req.url.indexOf("/web") == 0){
+      return this.webAPI(req, res);
+  }
 
   // if no user + pass specified then let anyone push
   if (!this.username || !this.password) {

@@ -2,3 +2,7 @@ node_modules
 deploys
 example
 .DS_Store
+checkouts
+ports
+repos
+

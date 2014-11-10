@@ -202,7 +202,8 @@ Host.prototype.handlePush = function(push, cb) {
 
   function prepare() {
     sideband.write('Received ' + push.repo + '\n')
-    sideband.write('Running npm install...\n')
+    sideband.write('Running npm install...\n');
+    debug('Host running npm install');
     debug('Host.handlePush prepare start for ' + push.repo)
     self.prepare(checkoutDir, sideband, function(err) {
       if (err) {
@@ -302,9 +303,11 @@ Host.prototype.close = function() {
 }
 
 Host.prototype.prepare = function(dir, res, cb) {
-  var npmi = spawn('npm', ['install'], { cwd : dir })
-  npmi.stdout.pipe(res, { end: false })
-  npmi.stderr.pipe(res, { end: false })
+  var npmi = spawn('npm', ['install', '--verbose'], { cwd : dir })
+  //npmi.stdout.pipe(res, { end: false });
+  npmi.stdout.pipe(process.stdout)
+  //npmi.stderr.pipe(res, { end: false })
+  npmi.stderr.pipe(process.stdout)
   npmi.on('exit', function (c) {
     if (c !== 0) return cb(new Error('Non-zero exit code: ' + c))
     cb(null, {code: c})

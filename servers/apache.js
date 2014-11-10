@@ -14,16 +14,13 @@ function Vhosts(a, conf){
 }
 
 Apache.prototype.setup = function(opts, cb){
-    this.confDir = opts.nginx.conf || null;
-    if(this.confDir == null){
-        if(fs.existsSync("/etc/httpd/conf")){
-            this.confDir = "/etc/httpd/conf";
-        } else if(fs.existsSync("/etc/apache2/")){
-            this.confDir = "/etc/apache2/sites-enabled";
-        } else{
-            console.error("E: Apache configuration not found!!!!");
-            throw new Exception("Config not found");
-        }
+    if(fs.existsSync("/etc/httpd/conf")){
+        this.confDir = "/etc/httpd/conf";
+    } else if(fs.existsSync("/etc/apache2/")){
+        this.confDir = "/etc/apache2/sites-enabled";
+    } else{
+        console.error("E: Apache configuration not found!!!!");
+        throw new Exception("Config not found");
     }
 
     this.vhosts = new Vhosts(this, this.confDir);

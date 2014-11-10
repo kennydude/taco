@@ -1,5 +1,6 @@
 var nconf = require('nginx-conf').NginxConfFile;
 var Vhosts = require('nginx-vhosts');
+var path = require("path");
 var debug = require('debug')('taco');
 var fs = require("fs");
 

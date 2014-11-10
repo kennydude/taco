@@ -90,7 +90,6 @@ Host.prototype.handle = function(req, res) {
 
   debug('Host.handle ' + ip + ' - ' + req.method + ' - ' + req.url);
 
-  console.log(req.url);
   if(req.url.indexOf("/web") == 0){
       return this.webAPI(req, res);
   }
@@ -124,8 +123,14 @@ Host.prototype.handle = function(req, res) {
   // 'info' and then again for 'push'
   function onService(err, service) {
     if (err) {
-      debug('Host.handle onService ' + service.action + ' err: ' + err)
-      return res.end(JSON.stringify({err: err}))
+      var a;
+      if (service != null){
+          a = service['action'];
+      }
+      debug('Host.handle onService ' + a + ' err: ' + err);
+      res.setHeader("Content-Type", "application/json");
+      res.statusCode = 503;
+      return res.end(JSON.stringify({err: err}));
     }
 
     if (service.action === 'push') {

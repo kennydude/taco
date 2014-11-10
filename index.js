@@ -275,8 +275,10 @@ Host.prototype.handlePush = function(push, cb) {
   }
 
   function vhost(opts) {
+    debug('Host.vhost');
     self.server.vhosts.write(opts, function(err, stdo, stde) {
       // give nginx time to reload config
+      debug('Host.vhost finished');
       setTimeout(function() {
         if (err) debug('Host.handlePush vhosts.write err: ' + err)
         else debug('Host.handlePush vhosts.write finished')
@@ -355,8 +357,10 @@ Host.prototype.monitor = function(name, dir, cb) {
 
       var procs = [name]
 
+      debug('mongroup: stop');
       group.stop(procs, 'SIGQUIT', function(err) {
         if (err) return cb(err)
+        debug('mongroup: start');
         group.start(procs, function(err) {
           if (err) return cb(err)
           cb()

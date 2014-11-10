@@ -47,6 +47,7 @@ Apache.prototype.reload = function(cb){
 
     ps.on('exit', function() {
         debug('Reloaded');
+        cb();
     });
 };
 

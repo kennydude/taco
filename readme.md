@@ -46,7 +46,7 @@ note: you can use any server running a brand new ubuntu 13.04 install, digital o
 yourdomain.com -> IP
 ```
 
-once you have your DNS set up properly you can run the magic one liner: `./bootstrap.sh admin yourdomain.com` 
+once you have your DNS set up properly you can run the magic one liner: `./bootstrap.sh admin yourdomain.com`
 
 or follow these step by step instructions (recommended for first-timers):
 
@@ -91,11 +91,13 @@ wget -qO- https://gist.github.com/maxogden/8551202/raw/3de4f5b818da41df8a40f41f8
 
 note: use `root` if you didn't do the recommended security steps above, otherwise use `admin` as the user
 
+install gcc, nodejs and git
+
 run these from your local machine:
 
 ```
 npm install taco -g
-install-taco-on-ubuntu admin yourdomain.com
+install-taco-on-ubuntu admin yourdomain.com apache-or-ngnix
 ```
 
 ### deploy your first app
@@ -176,4 +178,3 @@ sudo npm test
 taco doesn't implement all the bells and whistles needed to deploy 'application stacks' like LAMP or Rails. all you get is support for node programs that can be configured + started using `npm install` and `npm start`.
 
 anything that can't be installed from npm (e.g. non in-process databases) needs more complexity, and the existing PaaS platforms are probably what you want. taco has no complex backing services http://12factor.net/backing-services
-

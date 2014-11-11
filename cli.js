@@ -26,7 +26,10 @@ var opts = {
 }
 
 var host = taco(opts, function ready(err) {
+    host.createServer(port);
+/*
   http.createServer(host.handle.bind(host)).listen(port, function() {
     console.log('listening on', port)
   })
+*/
 })

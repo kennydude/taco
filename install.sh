@@ -1,5 +1,3 @@
-sudo apt-get install -y git build-essential
-
 sudo npm install -g
 
 sudo mkdir /tmp/mon

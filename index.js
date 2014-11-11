@@ -72,22 +72,22 @@ Host.prototype.createServer = function(port){
 	var app = express();
 	var self = this;
 	var reqAuth = function(req, res, next){
-			if (!this.username || !this.password) {
-					debug('DANGER!!! Host.handle no user/pass set, accepting request');
-					return next();
-			}
-			self.auth(req, res, function (err) {
-					if (err) {
-							debug('Host.handle auth invalid user/pass', ip)
-							res.writeHead(err, {'WWW-Authenticate': 'Basic realm="Secure Area"'})
-							res.end()
-							return
-					}
-					debug('Host.handle auth success, accepting request')
-					req.auth = true;
-					accept()
-			});
+		if (!this.username || !this.password) {
+			debug('DANGER!!! Host.handle no user/pass set, accepting request');
 			return next();
+		}
+		self.auth(req, res, function (err) {
+			if (err) {
+				debug('Host.handle auth invalid user/pass', ip)
+				res.writeHead(err, {'WWW-Authenticate': 'Basic realm="Secure Area"'})
+				res.end()
+				return
+			}
+			debug('Host.handle auth success, accepting request')
+			req.auth = true;
+			return next();
+		});
+		return next();
 	};
 
     app.use(bodyParser.urlencoded({ extended: false }));

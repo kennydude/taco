@@ -93,6 +93,24 @@ Host.prototype.createServer = function(port){
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json());
 
+    app.get("/", function(req, res){
+        res.sendfile(path.join(__dirname, "lib", "app.html"));
+    });
+
+    app.get("/taco.png", function(req, res){
+        res.sendfile(path.join(__dirname, "taco.png"));
+    });
+
+    app.get("/apps", reqAuth, function(req, res){
+        fs.readdir(self.portsDir, function(err, files){
+            if(err) return res.status(503).json({ status : "fail", "error" : err });
+            return res.json({
+                "status" : "ok",
+                "data" : files
+            });
+        });
+    });
+
     app.get("/:app/environ", reqAuth, function(req, res){
         var e = new EnvParser();
         e.parse(path.join(self.envDir, req.params.app), function(err){

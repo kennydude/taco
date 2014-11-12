@@ -68,5 +68,5 @@ function installMongroupConf(cb) {
 }
 
 function installTacoConf(cb) {
-  (new server()).install(vhost, host, cb);
+  (new server()).install(vhost, host, hostOverrides, cb);
 }

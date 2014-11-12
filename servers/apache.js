@@ -27,7 +27,7 @@ Apache.prototype.setup = function(opts, cb){
     cb();
 }
 
-Apache.prototype.install = function(vhost, host, cb){
+Apache.prototype.install = function(vhost, host, hostOverrides, cb){
     this.setup({ nginx : { conf : null } }, function(){});
     v = new Vhosts(this, this.confDir);
     v.write({

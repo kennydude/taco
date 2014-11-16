@@ -81,7 +81,7 @@ Host.prototype.createServer = function(port){
 		self.auth(req, res, function (err) {
 			if (err) {
 				debug('Host.handle auth invalid user/pass', req.ip)
-				res.set({'WWW-Authenticate': 'Basic realm="Secure Area"'})
+				res.status(401).set({'WWW-Authenticate': 'Basic realm="Secure Area"'})
 				res.end("401")
 				return;
 			}
@@ -89,7 +89,6 @@ Host.prototype.createServer = function(port){
 			req.auth = true;
 			return next();
 		});
-		return next();
 	};
 
     app.use(bodyParser.urlencoded({ extended: false }));

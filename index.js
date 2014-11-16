@@ -72,7 +72,7 @@ Host.prototype.createServer = function(port){
 	var app = express();
 	var self = this;
 	var reqAuth = function(req, res, next){
-		if (!this.username || !this.password) {
+		if (!self.username || !self.password) {
 			debug('DANGER!!! Host.handle no user/pass set, accepting request');
 			return next();
 		}

@@ -81,9 +81,9 @@ Host.prototype.createServer = function(port){
 		self.auth(req, res, function (err) {
 			if (err) {
 				debug('Host.handle auth invalid user/pass', req.ip)
-				res.writeHead(err, {'WWW-Authenticate': 'Basic realm="Secure Area"'})
-				res.end()
-				return
+				res.set({'WWW-Authenticate': 'Basic realm="Secure Area"'})
+				res.end("401")
+				return;
 			}
 			debug('Host.handle auth success, accepting request')
 			req.auth = true;

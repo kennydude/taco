@@ -70,6 +70,8 @@ Host.prototype.readPorts = function(cb) {
 
 Host.prototype.createServer = function(port){
 	var app = express();
+	app.set('trust proxy', 'loopback');
+
 	var self = this;
 	var reqAuth = function(req, res, next){
 		if (!self.username || !self.password) {
@@ -78,7 +80,7 @@ Host.prototype.createServer = function(port){
 		}
 		self.auth(req, res, function (err) {
 			if (err) {
-				debug('Host.handle auth invalid user/pass', ip)
+				debug('Host.handle auth invalid user/pass', req.ip)
 				res.writeHead(err, {'WWW-Authenticate': 'Basic realm="Secure Area"'})
 				res.end()
 				return
